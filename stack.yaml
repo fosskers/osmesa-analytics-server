@@ -1,0 +1,11 @@
+resolver: lts-9.13
+
+packages:
+- '.'
+
+extra-deps:
+  - generic-random-1.0.0.0
+
+flags: {}
+
+extra-package-dbs: []
