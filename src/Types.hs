@@ -99,7 +99,7 @@ instance Arbitrary UTCTime where
 data Distance = Distance { uid :: Word32, distance :: Float } deriving (Eq, Show, Generic, ToJSON)
 
 instance Arbitrary Distance where
-  arbitrary = Distance <$> arbitrary <*> (fmap abs arbitrary)
+  arbitrary = Distance <$> arbitrary <*> fmap abs arbitrary
 
 data LightUser = LightUser { uid        :: Word32
                            , name       :: Name

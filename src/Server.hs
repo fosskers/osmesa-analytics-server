@@ -1,6 +1,4 @@
 {-# LANGUAGE DataKinds, TypeOperators #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Main ( main ) where
 
