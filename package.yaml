@@ -24,8 +24,11 @@ dependencies:
   - containers
   - generic-random >= 1.0 && < 1.1
   - QuickCheck >= 2.9 && < 2.11
+  - servant >= 0.11 && < 0.12
+  - servant-server >= 0.11 && < 0.12
   - text
   - time
+  - warp >= 3.2 && < 3.3
 
 executables:
   server:

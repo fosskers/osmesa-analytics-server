@@ -2,10 +2,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
-module Types
-  ( User(..)
-  ) where
+module Types ( User(..), LightUser, Campaign(tag), simplify ) where
 
 import           Data.Aeson
 import           Data.Foldable (fold)
@@ -83,18 +82,15 @@ data User = User { uid                :: Word32   -- Called `uid` to match OSM.
 
 instance Arbitrary User where
   arbitrary = f <$> genericArbitrarySingle
-    where f u = u { waterway_km_add = abs $ waterway_km_add u
-                  , road_km_add     = abs $ road_km_add u
-                  , road_km_mod     = abs $ road_km_mod u
+    where f u = u { waterway_km_add = abs $ (waterway_km_add :: User -> Double) u
+                  , road_km_add     = abs $ (road_km_add :: User -> Double) u
+                  , road_km_mod     = abs $ (road_km_mod :: User -> Double) u
                   , edit_times      = sort $ edit_times u
-                  , country_list    = simplifyC $ country_list u
-                  , hashtags        = simplifyH $ hashtags u }
+                  , country_list    = simplify country $ country_list u
+                  , hashtags        = simplify (tag :: Hashtag -> T.Text) $ hashtags u }
 
-simplifyC :: [Country] -> [Country]
-simplifyC = map fold . groupBy (\c1 c2 -> country c1 == country c2) . sortBy (\c1 c2 -> compare (country c1) (country c2))
-
-simplifyH :: [Hashtag] -> [Hashtag]
-simplifyH = map fold . groupBy (\h1 h2 -> tag h1 == tag h2) . sortBy (\h1 h2 -> compare (tag h1) (tag h2))
+simplify :: (Monoid a, Ord b) => (a -> b) -> [a] -> [a]
+simplify f xs = map fold . groupBy (\x1 x2 -> f x1 == f x2) $ sortBy (\x1 x2 -> compare (f x1) (f x2)) xs
 
 instance Arbitrary UTCTime where
   arbitrary = (\n m -> UTCTime (ModifiedJulianDay $ 55000 + n) (secondsToDiffTime m)) <$> arbitrary <*> arbitrary
@@ -104,5 +100,35 @@ data Distance = Distance { uid :: Word32, distance :: Float } deriving (Eq, Show
 instance Arbitrary Distance where
   arbitrary = Distance <$> arbitrary <*> (fmap abs arbitrary)
 
-time :: Integer -> UTCTime
-time n = UTCTime (ModifiedJulianDay n) (secondsToDiffTime 0)
+data LightUser = LightUser { uid        :: Word32
+                           , name       :: Name
+                           , roads      :: Word32
+                           , buildings  :: Word32
+                           , edits      :: Word32
+                           , changesets :: Word32 } deriving (Eq, Show, Generic, ToJSON)
+
+instance Arbitrary LightUser where
+  arbitrary = genericArbitrarySingle
+
+data Campaign = Campaign { tag                :: T.Text
+                         , road_count_add     :: Word32
+                         , road_count_mod     :: Word32
+                         , building_count_add :: Word32
+                         , building_count_mod :: Word32
+                         , waterway_count_add :: Word32
+                         , poi_count_add      :: Word32
+                         , road_km_add        :: Double
+                         , road_km_mod        :: Double
+                         , waterway_km_add    :: Double } deriving (Eq, Show, Generic, ToJSON)
+
+instance Monoid Campaign where
+  mempty = Campaign "" 0 0 0 0 0 0 0 0 0
+
+  Campaign t rca rcm bca bcm wca pca rka rkm wka `mappend` Campaign t' rca' rcm' bca' bcm' wca' pca' rka' rkm' wka' =
+    Campaign (t <> t') (rca + rca') (rcm + rcm') (bca + bca') (bcm + bcm') (wca + wca') (pca + pca') (rka + rka') (rkm + rkm') (wka + wka')
+
+instance Arbitrary Campaign where
+  arbitrary = Campaign
+    <$> elements ["hotosm", "missingmaps"]
+    <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+    <*> fmap abs arbitrary <*> fmap abs arbitrary <*> fmap abs arbitrary
