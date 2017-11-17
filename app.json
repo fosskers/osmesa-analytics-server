@@ -1,0 +1,9 @@
+{
+  "name": "osmesa-analytics-server",
+  "repository": "https://github.com/fosskers/osmesa-analytics-server",
+  "buildpacks": [
+    {
+      "url": "https://github.com/mfine/heroku-buildpack-stack.git"
+    }
+  ]
+}
