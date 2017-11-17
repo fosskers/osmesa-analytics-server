@@ -15,6 +15,7 @@ import           Types
 ---
 
 type API = "users" :> Get '[JSON] [LightUser]
+  :<|> "users"     :> "hashtag" :> Capture "tag" T.Text :> Get '[JSON] [LightUser]
   :<|> "users"     :> Capture "uid" Word32  :> Get '[JSON] (Maybe User)
   :<|> "users"     :> Capture "name" T.Text :> Get '[JSON] (Maybe Word32)
   :<|> "hashtags"  :> Get '[JSON] [Campaign]
@@ -24,7 +25,7 @@ api :: Proxy API
 api = Proxy
 
 server :: Server API
-server = whatever :<|> user :<|> const whatever :<|> (simplify tag <$> whatever) :<|> hashtag
+server = whatever :<|> const whatever :<|> user :<|> const whatever :<|> (simplify tag <$> whatever) :<|> hashtag
 
 app :: Application
 app = serve api server
