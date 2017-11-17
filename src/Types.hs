@@ -16,6 +16,7 @@ import           Data.Time.Clock
 import           Data.Word
 import           GHC.Generics
 import           Generic.Random.Generic
+import           Servant.Docs
 import           Test.QuickCheck
 
 ---
@@ -89,6 +90,14 @@ instance Arbitrary User where
                   , country_list    = simplify country $ country_list u
                   , hashtags        = simplify (tag :: Hashtag -> T.Text) $ hashtags u }
 
+instance ToSample User where
+  toSamples _ = singleSample user
+    where user = User 123456 (Name "Ken Watanabe") (URL "s3://whatever/{z}/{x}/{y}")
+                 51 0 0 0 0 0 0 0 0 3 1 times countries hashes
+          times = [ time 55000, time 55500, time 55600 ]
+          countries = [ Country "DO" 3 ]
+          hashes = [ Hashtag "missingmaps" 3 ]
+
 simplify :: (Monoid a, Ord b) => (a -> b) -> [a] -> [a]
 simplify f xs = map fold . groupBy (\x1 x2 -> f x1 == f x2) $ sortBy (\x1 x2 -> compare (f x1) (f x2)) xs
 
@@ -104,8 +113,10 @@ data LightUser = LightUser { uid        :: Word32
                            , name       :: Name
                            , roads      :: Word32
                            , buildings  :: Word32
-                           , edits      :: Word32
                            , changesets :: Word32 } deriving (Eq, Show, Generic, ToJSON)
+
+instance ToSample LightUser where
+  toSamples _ = singleSample $ LightUser 123456 (Name "Ken Watanabe") 10 12 5
 
 instance Arbitrary LightUser where
   arbitrary = genericArbitrarySingle
@@ -127,8 +138,17 @@ instance Monoid Campaign where
   Campaign t rca rcm bca bcm wca pca rka rkm wka `mappend` Campaign _ rca' rcm' bca' bcm' wca' pca' rka' rkm' wka' =
     Campaign t (rca + rca') (rcm + rcm') (bca + bca') (bcm + bcm') (wca + wca') (pca + pca') (rka + rka') (rkm + rkm') (wka + wka')
 
+instance ToSample Campaign where
+  toSamples _ = singleSample $ Campaign "missingmaps" 1000 500 1000 500 500 2000 10000 5000 1000
+
 instance Arbitrary Campaign where
   arbitrary = Campaign
     <$> elements ["hotosm", "missingmaps"]
     <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
     <*> fmap abs arbitrary <*> fmap abs arbitrary <*> fmap abs arbitrary
+
+instance ToSample Word32 where
+  toSamples _ = singleSample 123456
+
+time :: Integer -> UTCTime
+time n = UTCTime (ModifiedJulianDay n) (secondsToDiffTime 0)
