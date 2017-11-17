@@ -10,18 +10,18 @@ import           Data.Aeson
 import           Data.Foldable (fold)
 import           Data.List (groupBy, sort, sortBy)
 import           Data.Monoid ((<>))
+import           Data.Swagger.Schema
 import qualified Data.Text as T
 import           Data.Time.Calendar (Day(..))
 import           Data.Time.Clock
 import           Data.Word
 import           GHC.Generics
 import           Generic.Random.Generic
-import           Servant.Docs
 import           Test.QuickCheck
 
 ---
 
-data Country = Country { country :: T.Text, count :: Word32 } deriving (Eq, Show, Generic, ToJSON)
+data Country = Country { country :: T.Text, count :: Word32 } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Monoid Country where
   mempty = Country "" 0
@@ -33,7 +33,7 @@ instance Arbitrary Country where
                         , "AM", "AW", "AU", "AT", "AZ", "BS", "BH", "BD", "BB", "BY", "BE"
                         , "BZ", "BJ", "BM", "BT", "BO", "BA", "BW", "BV", "BR", "VG", "IO" ]
 
-data Hashtag = Hashtag { tag :: T.Text, count :: Word32 } deriving (Eq, Show, Generic, ToJSON)
+data Hashtag = Hashtag { tag :: T.Text, count :: Word32 } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Monoid Hashtag where
   mempty = Hashtag "" 0
@@ -43,7 +43,7 @@ instance Arbitrary Hashtag where
   arbitrary = Hashtag <$> ts <*> arbitrary
     where ts = elements [ "hotosm", "missingmaps" ]
 
-newtype Name = Name T.Text deriving (Eq, Show, Generic, ToJSON)
+newtype Name = Name T.Text deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Arbitrary Name where
   arbitrary = (\f l -> Name $ f <> " " <> l) <$> firsts <*> lasts
@@ -56,7 +56,7 @@ instance Arbitrary Name where
                            , "O'Connor", "Parry", "Quail", "Redmond", "Schneider", "Thompson", "Urban"
                            , "Vallentine", "Wagner", "Xu", "Young", "Zuke" ]
 
-newtype URL = URL T.Text deriving (Eq, Show, Generic, ToJSON)
+newtype URL = URL T.Text deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Arbitrary URL where
   arbitrary = pure $ URL "s3://whatever/{z}/{x}/{y}.mvt"
@@ -79,7 +79,7 @@ data User = User { uid                :: Word32   -- Called `uid` to match OSM.
                  , edit_times         :: [UTCTime]
                  , country_list       :: [Country]
                  , hashtags           :: [Hashtag]
-                 } deriving (Eq, Show, Generic, ToJSON)
+                 } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Arbitrary User where
   arbitrary = f <$> genericArbitrarySingle
@@ -89,14 +89,6 @@ instance Arbitrary User where
                   , edit_times      = sort $ edit_times u
                   , country_list    = simplify country $ country_list u
                   , hashtags        = simplify (tag :: Hashtag -> T.Text) $ hashtags u }
-
-instance ToSample User where
-  toSamples _ = singleSample user
-    where user = User 123456 (Name "Ken Watanabe") (URL "s3://whatever/{z}/{x}/{y}")
-                 51 0 0 0 0 0 0 0 0 3 1 times countries hashes
-          times = [ time 55000, time 55500, time 55600 ]
-          countries = [ Country "DO" 3 ]
-          hashes = [ Hashtag "missingmaps" 3 ]
 
 simplify :: (Monoid a, Ord b) => (a -> b) -> [a] -> [a]
 simplify f xs = map fold . groupBy (\x1 x2 -> f x1 == f x2) $ sortBy (\x1 x2 -> compare (f x1) (f x2)) xs
@@ -113,10 +105,7 @@ data LightUser = LightUser { uid        :: Word32
                            , name       :: Name
                            , roads      :: Word32
                            , buildings  :: Word32
-                           , changesets :: Word32 } deriving (Eq, Show, Generic, ToJSON)
-
-instance ToSample LightUser where
-  toSamples _ = singleSample $ LightUser 123456 (Name "Ken Watanabe") 10 12 5
+                           , changesets :: Word32 } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Arbitrary LightUser where
   arbitrary = genericArbitrarySingle
@@ -130,7 +119,7 @@ data Campaign = Campaign { tag                :: T.Text
                          , poi_count_add      :: Word32
                          , road_km_add        :: Double
                          , road_km_mod        :: Double
-                         , waterway_km_add    :: Double } deriving (Eq, Show, Generic, ToJSON)
+                         , waterway_km_add    :: Double } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Monoid Campaign where
   mempty = Campaign "" 0 0 0 0 0 0 0 0 0
@@ -138,17 +127,11 @@ instance Monoid Campaign where
   Campaign t rca rcm bca bcm wca pca rka rkm wka `mappend` Campaign _ rca' rcm' bca' bcm' wca' pca' rka' rkm' wka' =
     Campaign t (rca + rca') (rcm + rcm') (bca + bca') (bcm + bcm') (wca + wca') (pca + pca') (rka + rka') (rkm + rkm') (wka + wka')
 
-instance ToSample Campaign where
-  toSamples _ = singleSample $ Campaign "missingmaps" 1000 500 1000 500 500 2000 10000 5000 1000
-
 instance Arbitrary Campaign where
   arbitrary = Campaign
     <$> elements ["hotosm", "missingmaps"]
     <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
     <*> fmap abs arbitrary <*> fmap abs arbitrary <*> fmap abs arbitrary
-
-instance ToSample Word32 where
-  toSamples _ = singleSample 123456
 
 time :: Integer -> UTCTime
 time n = UTCTime (ModifiedJulianDay n) (secondsToDiffTime 0)

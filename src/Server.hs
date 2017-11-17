@@ -5,18 +5,14 @@
 module Main ( main ) where
 
 import           Control.Monad.IO.Class (liftIO)
-import           Data.ByteString.Lazy (ByteString)
 import           Data.Proxy
 import qualified Data.Text as T
-import           Data.Text.Lazy (pack)
-import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Word (Word32)
-import           Network.HTTP.Types
-import           Network.Wai
 import qualified Network.Wai.Handler.Warp as W
 import           Servant.API
-import           Servant.Docs
 import           Servant.Server
+import           Servant.Swagger
+import           Servant.Swagger.UI
 import           Test.QuickCheck (Arbitrary, generate, arbitrary)
 import           Types
 
@@ -28,31 +24,16 @@ type OSMesa = "users" :> Get '[JSON] [LightUser]
   :<|> "users"     :> Capture "name" T.Text :> Get '[JSON] (Maybe Word32)
   :<|> "hashtags"  :> Get '[JSON] [Campaign]
   :<|> "hashtags"  :> Capture "tag" T.Text  :> Get '[JSON] (Maybe Campaign)
-  :<|> "help"      :> Raw
 
-instance ToCapture (Capture "tag" T.Text) where
-  toCapture _ = DocCapture "tag" "(String) Campaign hashtag to filter by."
+type API = OSMesa :<|> SwaggerSchemaUI "help" "swagger.json"
 
-instance ToCapture (Capture "uid" Word32) where
-  toCapture _ = DocCapture "uid" "(Int) User `uid` to search by."
-
-instance ToCapture (Capture "name" T.Text) where
-  toCapture _ = DocCapture "name" "(String) Username to search by."
-
-api :: Proxy OSMesa
-api = Proxy
-
-usage :: ByteString
-usage = encodeUtf8 . pack . markdown $ docs api
-
-server :: Server OSMesa
-server = whatever :<|> const whatever :<|> user :<|> const whatever
-  :<|> (simplify tag <$> whatever) :<|> hashtag
-  :<|> Tagged serveDocs
-  where serveDocs _ respond = respond $ responseLBS ok200 [("Content-Type", "text/plain")] usage
+server :: Server API
+server = (whatever :<|> const whatever :<|> user :<|> const whatever
+  :<|> (simplify tag <$> whatever) :<|> hashtag)
+  :<|> swaggerSchemaUIServer (toSwagger (Proxy :: Proxy OSMesa))
 
 app :: Application
-app = serve api server
+app = serve (Proxy :: Proxy API) server
 
 whatever :: Arbitrary a => Handler a
 whatever = liftIO $ generate arbitrary
