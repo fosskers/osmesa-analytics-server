@@ -124,8 +124,8 @@ data Campaign = Campaign { tag                :: T.Text
 instance Monoid Campaign where
   mempty = Campaign "" 0 0 0 0 0 0 0 0 0
 
-  Campaign t rca rcm bca bcm wca pca rka rkm wka `mappend` Campaign t' rca' rcm' bca' bcm' wca' pca' rka' rkm' wka' =
-    Campaign (t <> t') (rca + rca') (rcm + rcm') (bca + bca') (bcm + bcm') (wca + wca') (pca + pca') (rka + rka') (rkm + rkm') (wka + wka')
+  Campaign t rca rcm bca bcm wca pca rka rkm wka `mappend` Campaign _ rca' rcm' bca' bcm' wca' pca' rka' rkm' wka' =
+    Campaign t (rca + rca') (rcm + rcm') (bca + bca') (bcm + bcm') (wca + wca') (pca + pca') (rka + rka') (rkm + rkm') (wka + wka')
 
 instance Arbitrary Campaign where
   arbitrary = Campaign
