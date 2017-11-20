@@ -94,7 +94,7 @@ simplify :: (Monoid a, Ord b) => (a -> b) -> [a] -> [a]
 simplify f xs = map fold . groupBy (\x1 x2 -> f x1 == f x2) $ sortBy (\x1 x2 -> compare (f x1) (f x2)) xs
 
 instance Arbitrary UTCTime where
-  arbitrary = (\n m -> UTCTime (ModifiedJulianDay $ 55000 + n) (secondsToDiffTime m)) <$> arbitrary <*> arbitrary
+  arbitrary = (\n m -> UTCTime (ModifiedJulianDay $ 55000 + n) (secondsToDiffTime m)) <$> fmap abs arbitrary <*> fmap abs arbitrary
 
 data Distance = Distance { uid :: Word32, distance :: Float } deriving (Eq, Show, Generic, ToJSON)
 
