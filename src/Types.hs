@@ -82,19 +82,30 @@ data User = User { uid                :: Word32   -- Called `uid` to match OSM.
                  } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Arbitrary User where
-  arbitrary = f <$> genericArbitrarySingle
-    where f u = u { waterway_km_add = abs $ (waterway_km_add :: User -> Double) u
-                  , road_km_add     = abs $ (road_km_add :: User -> Double) u
-                  , road_km_mod     = abs $ (road_km_mod :: User -> Double) u
-                  , edit_times      = sort $ edit_times u
-                  , country_list    = simplify country $ country_list u
-                  , hashtags        = simplify (tag :: Hashtag -> T.Text) $ hashtags u }
+  arbitrary = User
+    <$> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> fmap abs arbitrary
+    <*> arbitrary
+    <*> fmap abs arbitrary
+    <*> fmap abs arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> arbitrary
+    <*> fmap sort (resize 600 $ listOf arbitrary)
+    <*> fmap (simplify country) arbitrary
+    <*> fmap (simplify (tag :: Hashtag -> T.Text)) arbitrary
 
 simplify :: (Monoid a, Ord b) => (a -> b) -> [a] -> [a]
 simplify f xs = map fold . groupBy (\x1 x2 -> f x1 == f x2) $ sortBy (\x1 x2 -> compare (f x1) (f x2)) xs
 
 instance Arbitrary UTCTime where
-  arbitrary = (\n m -> UTCTime (ModifiedJulianDay $ 55000 + n) (secondsToDiffTime m)) <$> fmap abs arbitrary <*> fmap abs arbitrary
+  arbitrary = (\n m -> UTCTime (ModifiedJulianDay n) (secondsToDiffTime m)) <$> choose (55000, 57500) <*> fmap abs arbitrary
 
 data Distance = Distance { uid :: Word32, distance :: Float } deriving (Eq, Show, Generic, ToJSON)
 
