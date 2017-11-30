@@ -130,19 +130,21 @@ data Campaign = Campaign { tag                :: T.Text
                          , poi_count_add      :: Word32
                          , road_km_add        :: Double
                          , road_km_mod        :: Double
-                         , waterway_km_add    :: Double } deriving (Eq, Show, Generic, ToJSON, ToSchema)
+                         , waterway_km_add    :: Double
+                         , users              :: [LightUser] } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Monoid Campaign where
-  mempty = Campaign "" 0 0 0 0 0 0 0 0 0
+  mempty = Campaign "" 0 0 0 0 0 0 0 0 0 []
 
-  Campaign t rca rcm bca bcm wca pca rka rkm wka `mappend` Campaign _ rca' rcm' bca' bcm' wca' pca' rka' rkm' wka' =
-    Campaign t (rca + rca') (rcm + rcm') (bca + bca') (bcm + bcm') (wca + wca') (pca + pca') (rka + rka') (rkm + rkm') (wka + wka')
+  Campaign t rca rcm bca bcm wca pca rka rkm wka us `mappend` Campaign _ rca' rcm' bca' bcm' wca' pca' rka' rkm' wka' us' =
+    Campaign t (rca + rca') (rcm + rcm') (bca + bca') (bcm + bcm') (wca + wca') (pca + pca') (rka + rka') (rkm + rkm') (wka + wka') (us <> us')
 
 instance Arbitrary Campaign where
   arbitrary = Campaign
     <$> elements ["hotosm", "missingmaps"]
     <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
     <*> fmap abs arbitrary <*> fmap abs arbitrary <*> fmap abs arbitrary
+    <*> arbitrary
 
 time :: Integer -> UTCTime
 time n = UTCTime (ModifiedJulianDay n) (secondsToDiffTime 0)
