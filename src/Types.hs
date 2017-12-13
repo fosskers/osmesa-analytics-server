@@ -130,37 +130,36 @@ instance Arbitrary Distance where
 
 data LightUser = LightUser { uid        :: Word
                            , name       :: Name
-                           , roads      :: Word
-                           , buildings  :: Word
-                           , changesets :: Word } deriving (Eq, Show, Generic, ToJSON, ToSchema)
+                           , edits      :: Word } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Arbitrary LightUser where
   arbitrary = genericArbitrarySingle
 
 data Campaign = Campaign { tag                :: T.Text
-                         , road_count_add     :: Word
-                         , road_count_mod     :: Word
-                         , building_count_add :: Word
-                         , building_count_mod :: Word
-                         , waterway_count_add :: Word
-                         , poi_count_add      :: Word
-                         , road_km_add        :: Double
-                         , road_km_mod        :: Double
-                         , waterway_km_add    :: Double
+                         , extent_uri         :: URL
+                         , buildings_add      :: Word
+                         , buildings_mod      :: Word
+                         , roads_add          :: Word
+                         , km_roads_add       :: Double
+                         , roads_mod          :: Word
+                         , km_roads_mod       :: Double
+                         , waterways_add      :: Word
+                         , km_waterways_add   :: Double
+                         , poi_add            :: Word
                          , users              :: [LightUser] } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Monoid Campaign where
-  mempty = Campaign "" 0 0 0 0 0 0 0 0 0 []
+  mempty = Campaign "" (URL "") 0 0 0 0 0 0 0 0 0 []
 
-  Campaign t rca rcm bca bcm wca pca rka rkm wka us `mappend` Campaign _ rca' rcm' bca' bcm' wca' pca' rka' rkm' wka' us' =
-    Campaign t (rca + rca') (rcm + rcm') (bca + bca') (bcm + bcm') (wca + wca') (pca + pca') (rka + rka') (rkm + rkm') (wka + wka') (us <> us')
+  Campaign t e rca rcm bca bcm wca pca rka rkm wka us `mappend` Campaign _ _ rca' rcm' bca' bcm' wca' pca' rka' rkm' wka' us' =
+    Campaign t e (rca + rca') (rcm + rcm') (bca + bca') (bcm + bcm') (wca + wca') (pca + pca') (rka + rka') (rkm + rkm') (wka + wka') (us <> us')
 
 instance Arbitrary Campaign where
   arbitrary = Campaign
     <$> elements ["hotosm", "missingmaps"]
-    <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
-    <*> fmap abs arbitrary <*> fmap abs arbitrary <*> fmap abs arbitrary
     <*> arbitrary
-
--- time :: Integer -> UTCTime
--- time n = UTCTime (C.ModifiedJulianDay n) (secondsToDiffTime 0)
+    <*> arbitrary <*> arbitrary
+    <*> arbitrary <*> fmap abs arbitrary <*> arbitrary <*> fmap abs arbitrary
+    <*> arbitrary <*> fmap abs arbitrary
+    <*> arbitrary
+    <*> arbitrary
