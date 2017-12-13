@@ -14,14 +14,13 @@ import           Data.Swagger.Schema
 import qualified Data.Text as T
 import           Data.Time.Calendar (Day(..))
 import           Data.Time.Clock
-import           Data.Word
 import           GHC.Generics
 import           Generic.Random.Generic
 import           Test.QuickCheck
 
 ---
 
-data Country = Country { country :: T.Text, count :: Word32 } deriving (Eq, Show, Generic, ToJSON, ToSchema)
+data Country = Country { country :: T.Text, count :: Word } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Monoid Country where
   mempty = Country "" 0
@@ -33,7 +32,7 @@ instance Arbitrary Country where
                         , "AM", "AW", "AU", "AT", "AZ", "BS", "BH", "BD", "BB", "BY", "BE"
                         , "BZ", "BJ", "BM", "BT", "BO", "BA", "BW", "BV", "BR", "VG", "IO" ]
 
-data Hashtag = Hashtag { tag :: T.Text, count :: Word32 } deriving (Eq, Show, Generic, ToJSON, ToSchema)
+data Hashtag = Hashtag { tag :: T.Text, count :: Word } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Monoid Hashtag where
   mempty = Hashtag "" 0
@@ -61,7 +60,7 @@ newtype URL = URL T.Text deriving (Eq, Show, Generic, ToJSON, ToSchema)
 instance Arbitrary URL where
   arbitrary = pure $ URL "https://s3.amazonaws.com/vectortiles/test-vts/peruser-2/piaco_dk/{z}/{x}/{y}.mvt"
 
-data Editor = Editor { tag :: T.Text, count :: Word32 } deriving (Eq, Show, Generic, ToJSON, ToSchema)
+data Editor = Editor { tag :: T.Text, count :: Word } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Monoid Editor where
   mempty = Editor "" 0
@@ -72,20 +71,20 @@ instance Arbitrary Editor where
     where es = elements [ "josm", "iD" ]
 
 -- | Result of a @/users/{uid}@ call.
-data User = User { uid                :: Word32   -- Called `uid` to match OSM.
+data User = User { uid                :: Word   -- Called `uid` to match OSM.
                  , name               :: Name
                  , extent_uri         :: URL
-                 , buildings_add      :: Word32
-                 , buildings_mod      :: Word32
-                 , roads_add          :: Word32
+                 , buildings_add      :: Word
+                 , buildings_mod      :: Word
+                 , roads_add          :: Word
                  , km_roads_add       :: Double
-                 , roads_mod          :: Word32
+                 , roads_mod          :: Word
                  , km_roads_mod       :: Double
-                 , waterways_add      :: Word32
+                 , waterways_add      :: Word
                  , km_waterways_add   :: Double
-                 , poi_add            :: Word32
-                 , changeset_count    :: Word32
-                 , edit_count         :: Word32
+                 , poi_add            :: Word
+                 , changeset_count    :: Word
+                 , edit_count         :: Word
                  , editors            :: [Editor]
                  , edit_times         :: [UTCTime]
                  , country_list       :: [Country]
@@ -119,27 +118,27 @@ simplify f xs = map fold . groupBy (\x1 x2 -> f x1 == f x2) $ sortBy (\x1 x2 -> 
 instance Arbitrary UTCTime where
   arbitrary = (\n m -> UTCTime (ModifiedJulianDay n) (secondsToDiffTime m)) <$> choose (55000, 57500) <*> fmap abs arbitrary
 
-data Distance = Distance { uid :: Word32, distance :: Float } deriving (Eq, Show, Generic, ToJSON)
+data Distance = Distance { uid :: Word, distance :: Float } deriving (Eq, Show, Generic, ToJSON)
 
 instance Arbitrary Distance where
   arbitrary = Distance <$> arbitrary <*> fmap abs arbitrary
 
-data LightUser = LightUser { uid        :: Word32
+data LightUser = LightUser { uid        :: Word
                            , name       :: Name
-                           , roads      :: Word32
-                           , buildings  :: Word32
-                           , changesets :: Word32 } deriving (Eq, Show, Generic, ToJSON, ToSchema)
+                           , roads      :: Word
+                           , buildings  :: Word
+                           , changesets :: Word } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Arbitrary LightUser where
   arbitrary = genericArbitrarySingle
 
 data Campaign = Campaign { tag                :: T.Text
-                         , road_count_add     :: Word32
-                         , road_count_mod     :: Word32
-                         , building_count_add :: Word32
-                         , building_count_mod :: Word32
-                         , waterway_count_add :: Word32
-                         , poi_count_add      :: Word32
+                         , road_count_add     :: Word
+                         , road_count_mod     :: Word
+                         , building_count_add :: Word
+                         , building_count_mod :: Word
+                         , waterway_count_add :: Word
+                         , poi_count_add      :: Word
                          , road_km_add        :: Double
                          , road_km_mod        :: Double
                          , waterway_km_add    :: Double

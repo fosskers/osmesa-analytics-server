@@ -8,7 +8,6 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Bool (bool)
 import           Data.Proxy
 import qualified Data.Text as T
-import           Data.Word (Word32)
 import           GHC.Generics
 import qualified Network.Wai.Handler.Warp as W
 import           Options.Generic
@@ -27,8 +26,8 @@ data Env = Env { heroku :: Bool <?> "Bind to $PORT, as Heroku expects." } derivi
 
 type OSMesa = "users" :> Get '[JSON] [LightUser]
   :<|> "users"     :> "hashtag" :> Capture "tag" T.Text :> Get '[JSON] [LightUser]
-  :<|> "users"     :> Capture "uid" Word32  :> Get '[JSON] (Maybe User)
-  :<|> "users"     :> Capture "name" T.Text :> Get '[JSON] (Maybe Word32)
+  :<|> "users"     :> Capture "uid" Word  :> Get '[JSON] (Maybe User)
+  :<|> "users"     :> Capture "name" T.Text :> Get '[JSON] (Maybe Word)
   :<|> "hashtags"  :> Get '[JSON] [Campaign]
   :<|> "hashtags"  :> Capture "tag" T.Text  :> Get '[JSON] (Maybe Campaign)
 
@@ -45,7 +44,7 @@ app = serve (Proxy :: Proxy API) server
 whatever :: Arbitrary a => Handler a
 whatever = liftIO $ generate arbitrary
 
-user :: Word32 -> Handler (Maybe User)
+user :: Word -> Handler (Maybe User)
 user i = (\u -> Just $ u { uid = i }) <$> whatever
 
 hashtag :: T.Text -> Handler (Maybe Campaign)
