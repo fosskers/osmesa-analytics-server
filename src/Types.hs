@@ -12,7 +12,7 @@ import           Data.List (groupBy, sort, sortBy)
 import           Data.Monoid ((<>))
 import           Data.Swagger.Schema
 import qualified Data.Text as T
-import           Data.Time.Calendar (Day(..))
+import qualified Data.Time.Calendar as C
 import           Data.Time.Clock
 import           GHC.Generics
 import           Generic.Random.Generic
@@ -20,7 +20,7 @@ import           Test.QuickCheck
 
 ---
 
-data Country = Country { country :: T.Text, count :: Word } deriving (Eq, Show, Generic, ToJSON, ToSchema)
+data Country = Country { name :: T.Text, count :: Word } deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Monoid Country where
   mempty = Country "" 0
@@ -70,6 +70,11 @@ instance Arbitrary Editor where
   arbitrary = Editor <$> es <*> arbitrary
     where es = elements [ "josm", "iD" ]
 
+data Day = Day { day :: UTCTime, count :: Word } deriving (Eq, Ord, Show, Generic, ToJSON, ToSchema)
+
+instance Arbitrary Day where
+  arbitrary = Day <$> arbitrary <*> arbitrary
+
 -- | Result of a @/users/{uid}@ call.
 data User = User { uid                :: Word   -- Called `uid` to match OSM.
                  , name               :: Name
@@ -86,7 +91,7 @@ data User = User { uid                :: Word   -- Called `uid` to match OSM.
                  , changeset_count    :: Word
                  , edit_count         :: Word
                  , editors            :: [Editor]
-                 , edit_times         :: [UTCTime]
+                 , edit_times         :: [Day]
                  , country_list       :: [Country]
                  , hashtags           :: [Hashtag]
                  } deriving (Eq, Show, Generic, ToJSON, ToSchema)
@@ -109,14 +114,14 @@ instance Arbitrary User where
     <*> arbitrary
     <*> fmap (simplify (tag :: Editor -> T.Text)) arbitrary
     <*> fmap sort (resize 600 $ listOf arbitrary)
-    <*> fmap (simplify country) arbitrary
+    <*> fmap (simplify (name :: Country -> T.Text)) arbitrary
     <*> fmap (simplify (tag :: Hashtag -> T.Text)) arbitrary
 
 simplify :: (Monoid a, Ord b) => (a -> b) -> [a] -> [a]
 simplify f xs = map fold . groupBy (\x1 x2 -> f x1 == f x2) $ sortBy (\x1 x2 -> compare (f x1) (f x2)) xs
 
 instance Arbitrary UTCTime where
-  arbitrary = (\n m -> UTCTime (ModifiedJulianDay n) (secondsToDiffTime m)) <$> choose (55000, 57500) <*> fmap abs arbitrary
+  arbitrary = (\n m -> UTCTime (C.ModifiedJulianDay n) (secondsToDiffTime m)) <$> choose (55000, 57500) <*> fmap abs arbitrary
 
 data Distance = Distance { uid :: Word, distance :: Float } deriving (Eq, Show, Generic, ToJSON)
 
@@ -157,5 +162,5 @@ instance Arbitrary Campaign where
     <*> fmap abs arbitrary <*> fmap abs arbitrary <*> fmap abs arbitrary
     <*> arbitrary
 
-time :: Integer -> UTCTime
-time n = UTCTime (ModifiedJulianDay n) (secondsToDiffTime 0)
+-- time :: Integer -> UTCTime
+-- time n = UTCTime (C.ModifiedJulianDay n) (secondsToDiffTime 0)
