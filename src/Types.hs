@@ -59,23 +59,34 @@ instance Arbitrary Name where
 newtype URL = URL T.Text deriving (Eq, Show, Generic, ToJSON, ToSchema)
 
 instance Arbitrary URL where
-  arbitrary = pure $ URL "s3://whatever/{z}/{x}/{y}.mvt"
+  arbitrary = pure $ URL "https://s3.amazonaws.com/vectortiles/test-vts/peruser-2/piaco_dk/{z}/{x}/{y}.mvt"
+
+data Editor = Editor { tag :: T.Text, count :: Word32 } deriving (Eq, Show, Generic, ToJSON, ToSchema)
+
+instance Monoid Editor where
+  mempty = Editor "" 0
+  Editor t c1 `mappend` Editor _ c2 = Editor t (c1 + c2)
+
+instance Arbitrary Editor where
+  arbitrary = Editor <$> es <*> arbitrary
+    where es = elements [ "josm", "iD" ]
 
 -- | Result of a @/users/{uid}@ call.
 data User = User { uid                :: Word32   -- Called `uid` to match OSM.
                  , name               :: Name
-                 , geo_extent         :: URL
-                 , building_count_add :: Word32
-                 , building_count_mod :: Word32
-                 , waterway_count_add :: Word32
-                 , waterway_km_add    :: Double
-                 , poi_count_add      :: Word32
-                 , road_km_add        :: Double
-                 , road_km_mod        :: Double
-                 , road_count_add     :: Word32
-                 , road_count_mod     :: Word32
+                 , extent_uri         :: URL
+                 , buildings_add      :: Word32
+                 , buildings_mod      :: Word32
+                 , roads_add          :: Word32
+                 , km_roads_add       :: Double
+                 , roads_mod          :: Word32
+                 , km_roads_mod       :: Double
+                 , waterways_add      :: Word32
+                 , km_waterways_add   :: Double
+                 , poi_add            :: Word32
                  , changeset_count    :: Word32
-                 , josm_edit_count    :: Word32
+                 , edit_count         :: Word32
+                 , editors            :: [Editor]
                  , edit_times         :: [UTCTime]
                  , country_list       :: [Country]
                  , hashtags           :: [Hashtag]
@@ -92,11 +103,12 @@ instance Arbitrary User where
     <*> fmap abs arbitrary
     <*> arbitrary
     <*> fmap abs arbitrary
+    <*> arbitrary
     <*> fmap abs arbitrary
     <*> arbitrary
     <*> arbitrary
     <*> arbitrary
-    <*> arbitrary
+    <*> fmap (simplify (tag :: Editor -> T.Text)) arbitrary
     <*> fmap sort (resize 600 $ listOf arbitrary)
     <*> fmap (simplify country) arbitrary
     <*> fmap (simplify (tag :: Hashtag -> T.Text)) arbitrary
